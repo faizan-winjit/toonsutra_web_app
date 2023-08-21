@@ -27,8 +27,9 @@ jobs:
       - name: Deploy to S3
         uses: jakejarvis/s3-sync-action@v0.5.0
         with:
-          args: --acl public-read --delete
+          args: --acl public-read --delete --source "build/web" --destination "/"
         env:
           AWS_S3_BUCKET: toonsutra-web-app
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
