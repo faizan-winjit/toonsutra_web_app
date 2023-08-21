@@ -34,7 +34,7 @@ jobs:
  
 
       - name: Build Flutter web app
-        run: flutter build web --release
+        run: flutter build web
 
  
 
