@@ -1,22 +1,114 @@
+// Dependencies
+// Flutter Material Package
 import 'package:flutter/material.dart';
+// Dart Async for Asynchoronous Flow
+import 'dart:async';
+// Dart Conver to use json.convert to convert POST API body into json.
+import 'dart:convert';
+// Flutter Dio Package for API call
+import 'package:dio/dio.dart';
+// Dart HTML Package to use window.location.href so that we can use links inside our page and get the current url
+import 'dart:html';
+// Flutter Share Plus Package to use the inbuild share functionality of platforms.
+import 'package:share_plus/share_plus.dart';
+// Flutter Services package to use Clipboard.setData()
+import 'package:flutter/services.dart';
 
-// Comic Details - The Overall Widget making the entire ToonSutra Comic Details Page.
-/* It consists of main 5 widgets:part 
+// A class used to store the API Result Data
+class apiData {
+  static Map<String, dynamic> result = {'': ''};
+}
+
+// ComicDetails
+// ID: 0
+// Parent Widget of all widgets that make the Comic Details Page
+// StatefulWidget ComicDetails which makes the API Call.
+class ComicDetails extends StatefulWidget {
+  var comicID;
+  ComicDetails(this.comicID);
+  @override
+  ComicDetailsState createState() => ComicDetailsState(comicID);
+}
+
+class ComicDetailsState extends State<ComicDetails> {
+  var comicID;
+  ComicDetailsState(this.comicID);
+  bool _isDataLoaded = false;
+  @override
+  void initState() {
+    super.initState();
+    apicall(); // API Fetching Method
+  }
+
+  Future<void> apicall() async {
+    var headers = {'Content-Type': 'application/json'};
+    var data = json.encode({"comic_id": comicID, "language_id": 2});
+    var dio = Dio();
+    var response = await dio.request(
+      'https://api.toonsutra.com/api/v1.0/appUser/getBannerComicWL',
+      options: Options(
+        method: 'POST',
+        headers: headers,
+      ),
+      data: data,
+    );
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> jsonResponse = response.data;
+      int status = jsonResponse['statusCode'];
+      Map<String, dynamic> result = jsonResponse['result'];
+      apiData.result = jsonResponse['result'];
+      setState(() {
+        _isDataLoaded = true;
+      });
+      print('API Call Sucessful, Data Loaded');
+    } else {
+      print('API Call Failed. Data Not Loaded');
+      print(response.statusMessage);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isDataLoaded) {
+      return Center(
+        child: CircularProgressIndicator(), // Show loading indicator
+      );
+    }
+    return ComicDetailsWidget();
+  }
+}
+
+// Comic Details Widget- The Overall Widget making the entire ToonSutra Comic Details Page.
+// ID:0
+/* It consists of main 6 widgets:part 
 1. NavBar
 2. ComicDetailsCard
 3. DownloadAd
 4. ChapterBox
 5. ChapterBoxGrid
+6. ChapterPreview
 
 */
-Widget ComicDetails() {
+Widget ComicDetailsWidget() {
+  // Data from API to be passed to various Widgets as Parameter
+  var comic_name = apiData.result['name'] ?? 'Not Known';
+  var author = apiData.result['author'] ?? 'Not Known';
+  var description = apiData.result['description'] ?? 'Not Known';
+  var comic_thumbnail = apiData.result['comic_thumbnail'] ?? 'Not Known';
+  var totalLikes = apiData.result['totalLikes'] ?? '0';
+  var averageRating = apiData.result['averageRating'] ?? '0.0';
+  int comicID = apiData.result['id'] ?? 0;
+  var chapters = apiData.result['chapters'];
+  //-----------------------------------------------------------------
+
   return SingleChildScrollView(
     child: Center(
       child: FractionallySizedBox(
           widthFactor: 1588 / 1728,
           child: LayoutBuilder(builder: ((context, constraints) {
             double w = constraints.maxWidth;
-            bool mobile = w < 600 ? true : false;
+            bool mobile = w < 1100 ? true : false;
             return Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -24,9 +116,10 @@ Widget ComicDetails() {
                 SizedBox(height: w * (mobile ? 0.04722 : 0.0192)),
                 NavBar(mobile),
                 SizedBox(height: w * (mobile ? 0.0733 : 0.037)),
-                ComicDetailsCard(mobile),
+                ComicDetailsCard(mobile, comic_name, author, description,
+                    comic_thumbnail, totalLikes, averageRating, comicID),
                 SizedBox(height: w * (mobile ? 0.1121 : 0.020)),
-                DownloadAd(mobile),
+                DownloadAd(mobile, comic_name),
                 SizedBox(height: w * (mobile ? 0.123 : 0.0371)),
                 Text(
                   "Chapters",
@@ -40,7 +133,7 @@ Widget ComicDetails() {
                   textAlign: TextAlign.left,
                 ),
                 SizedBox(height: w * (mobile ? 0.1075 : 0.0231)),
-                ChapterBoxGrid(mobile),
+                ChapterBoxGrid(mobile, chapters, comic_name),
               ],
             );
           }))),
@@ -50,6 +143,26 @@ Widget ComicDetails() {
 //-------------------------------------------------------------------------------------------------
 
 // Nav Bar Widget
+/// This widget represents the navigation bar that contains links and icons
+/// for various sections of the website. It adapts its layout and behavior
+/// based on the device type (mobile or desktop).
+///
+/// The [mobile] parameter determines whether the navigation bar is optimized
+/// for mobile devices or not.
+///
+/// The widget includes clickable links to different sections of the website,
+/// such as Home, FAQ, Privacy Policy, Terms & Conditions, and Contact Us.
+///
+/// The links use the [window.location.href] method to redirect users to
+/// the respective URLs.
+///
+/// On mobile devices, a "hamburger" icon is displayed, which when clicked,
+/// opens the drawer to show the navigation links.
+///
+/// Usage:
+/// ```dart
+/// NavBar(mobile: true),
+/// ```
 Widget NavBar(bool mobile) {
   return AspectRatio(
     aspectRatio: (mobile ? 8 : 1588 / 50.23),
@@ -59,13 +172,19 @@ Widget NavBar(bool mobile) {
         children: [
           // ToonSutra Icon
           Positioned(
-              left: 0,
-              top: w * (mobile ? 0 : 0.0032),
-              child: Image.asset(
-                'assets/images/toonsutra_logo.png',
-                width: w * (mobile ? 0.125 : 0.02833),
-                height: w * (mobile ? 0.125 : 0.02833),
-              )),
+            left: 0,
+            top: w * (mobile ? 0 : 0.0032),
+            child: InkWell(
+                onTap: () {
+                  window.location.href = 'https://www.toonsutra.com/';
+                },
+                child: Image.asset(
+                  'assets/images/toonsutra_logo.png',
+                  width: w * (mobile ? 0.125 : 0.02833),
+                  height: w * (mobile ? 0.125 : 0.02833),
+                )),
+          ),
+
           //-----------------------------------------------------------------------------
           // Home
           Positioned(
@@ -73,19 +192,25 @@ Widget NavBar(bool mobile) {
             left: w * 0.698041562,
             child: Visibility(
               visible: !mobile,
-              child: Text(
-                "Home",
-                style: TextStyle(
-                  fontFamily: "DM Sans",
-                  fontSize: w * 0.0088,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff5f5f5f),
-                  // height: 18 / 14,
+              child: InkWell(
+                onTap: () {
+                  window.location.href = 'https://www.toonsutra.com/';
+                },
+                child: Text(
+                  "Home",
+                  style: TextStyle(
+                    fontFamily: "DM Sans",
+                    fontSize: w * 0.0088,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xff5f5f5f),
+                    // height: 18 / 14,
+                  ),
+                  textAlign: TextAlign.left,
                 ),
-                textAlign: TextAlign.left,
               ),
             ),
           ),
+
           //-----------------------------------------------------------------------------
           // FAQ
           Positioned(
@@ -93,19 +218,25 @@ Widget NavBar(bool mobile) {
             left: w * 0.741492443,
             child: Visibility(
               visible: !mobile,
-              child: Text(
-                "FAQ",
-                style: TextStyle(
-                  fontFamily: "DM Sans",
-                  fontSize: w * 0.0088,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff5f5f5f),
-                  // height: 18 / 14,
+              child: InkWell(
+                onTap: () {
+                  window.location.href = 'https://toonsutra.in/faq_01/';
+                },
+                child: Text(
+                  "FAQ",
+                  style: TextStyle(
+                    fontFamily: "DM Sans",
+                    fontSize: w * 0.0088,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xff5f5f5f),
+                    // height: 18 / 14,
+                  ),
+                  textAlign: TextAlign.left,
                 ),
-                textAlign: TextAlign.left,
               ),
             ),
           ),
+
           //-----------------------------------------------------------------------------
           // Privacy Policy
           Positioned(
@@ -113,19 +244,25 @@ Widget NavBar(bool mobile) {
             left: w * 0.77738665,
             child: Visibility(
               visible: !mobile,
-              child: Text(
-                "Privacy Policy",
-                style: TextStyle(
-                  fontFamily: "DM Sans",
-                  fontSize: w * 0.0088,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff5f5f5f),
-                  // height: 18 / 14,
+              child: InkWell(
+                onTap: () {
+                  window.location.href = 'https://toonsutra.in/privacy-policy/';
+                },
+                child: Text(
+                  "Privacy Policy",
+                  style: TextStyle(
+                    fontFamily: "DM Sans",
+                    fontSize: w * 0.0088,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xff5f5f5f),
+                    // height: 18 / 14,
+                  ),
+                  textAlign: TextAlign.left,
                 ),
-                textAlign: TextAlign.left,
               ),
             ),
           ),
+
           //-----------------------------------------------------------------------------
           // Terms & Conditions
           Positioned(
@@ -133,19 +270,26 @@ Widget NavBar(bool mobile) {
             left: w * 0.853583123,
             child: Visibility(
               visible: !mobile,
-              child: Text(
-                "Terms & Conditions",
-                style: TextStyle(
-                  fontFamily: "DM Sans",
-                  fontSize: w * 0.0088,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff5f5f5f),
-                  // height: 18 / 14,
+              child: InkWell(
+                onTap: () {
+                  window.location.href =
+                      'https://toonsutra.in/terms-and-conditions/';
+                },
+                child: Text(
+                  "Terms & Conditions",
+                  style: TextStyle(
+                    fontFamily: "DM Sans",
+                    fontSize: w * 0.0088,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xff5f5f5f),
+                    // height: 18 / 14,
+                  ),
+                  textAlign: TextAlign.left,
                 ),
-                textAlign: TextAlign.left,
               ),
             ),
           ),
+
           //-----------------------------------------------------------------------------
           // Contact Us
           Positioned(
@@ -153,29 +297,40 @@ Widget NavBar(bool mobile) {
             left: w * 0.951819899,
             child: Visibility(
               visible: !mobile,
-              child: Text(
-                "Contact Us",
-                style: TextStyle(
-                  fontFamily: "DM Sans",
-                  fontSize: w * 0.0088,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xff5f5f5f),
-                  // height: 18 / 14,
+              child: InkWell(
+                onTap: () {
+                  window.location.href = 'https://toonsutra.in/contact/';
+                },
+                child: Text(
+                  "Contact Us",
+                  style: TextStyle(
+                    fontFamily: "DM Sans",
+                    fontSize: w * 0.0088,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xff5f5f5f),
+                    // height: 18 / 14,
+                  ),
+                  textAlign: TextAlign.left,
                 ),
-                textAlign: TextAlign.left,
               ),
             ),
           ),
+
           //-----------------------------------------------------------------------------
-          // Hamburger
+          // Hamburger/ Drawer
           Positioned(
             top: w * 0.029,
             left: w * 0.9277,
             child: Visibility(
               visible: mobile,
-              child: Icon(
-                Icons.menu,
-                size: w * 0.0666,
+              child: InkWell(
+                onTap: () {
+                  Scaffold.of(context).openDrawer();
+                },
+                child: Icon(
+                  Icons.menu,
+                  size: w * 0.0666,
+                ),
               ),
             ),
           ),
@@ -188,7 +343,12 @@ Widget NavBar(bool mobile) {
 //--------------------------------------------------------------------------------------
 
 // ComicDetailsCard Widget
-Widget ComicDetailsCard(bool mobile) {
+// ID: 2
+// A Widget that shows various details of a comic including comic_name, author, no of reads (Unavailable right now)
+// description, comic_thumbnail, likes, ratings and a share button that shares the current page link.
+Widget ComicDetailsCard(mobile, comic_name, author, description,
+    comic_thumbnail, totalLikes, averageRating, comicID) {
+  var url = window.location.href;
   return AspectRatio(
     aspectRatio: mobile ? 360 / 559.63 : 1588 / 254,
     child: LayoutBuilder(builder: ((context, constraints) {
@@ -205,9 +365,13 @@ Widget ComicDetailsCard(bool mobile) {
               child: Container(
                 height: (mobile ? 0.705 * w : h),
                 width: (mobile ? 1 : 0.236) * w,
-                child: Image.asset(
-                  'assets/images/image1.png',
-                  fit: BoxFit.fill,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    comic_thumbnail ?? "https://picsum.photos/200/300",
+                    fit: BoxFit.fitWidth,
+                    alignment: Alignment.topCenter,
+                  ),
                 ),
               ),
             ),
@@ -217,7 +381,7 @@ Widget ComicDetailsCard(bool mobile) {
               left: (mobile ? 0 : 0.255) * w,
               top: (mobile ? 0.7649 : 0.0057) * w,
               child: Text(
-                "Astra The Immortal",
+                '$comic_name',
                 style: TextStyle(
                   fontFamily: "DM Sans",
                   fontSize: w * (mobile ? 0.0555 : 0.0125),
@@ -234,7 +398,7 @@ Widget ComicDetailsCard(bool mobile) {
                 left: (mobile ? 0 : 0.255) * w,
                 top: (mobile ? 0.854 : 0.026) * w,
                 child: Text(
-                  "Gayatri Banerjee",
+                  '$author >',
                   style: TextStyle(
                     fontFamily: "DM Sans",
                     fontSize: w * (mobile ? 0.0388 : 0.0088),
@@ -266,10 +430,11 @@ Widget ComicDetailsCard(bool mobile) {
             Positioned(
               left: (mobile ? 0 : 0.255) * w,
               top: (mobile ? 1.131 : 0.0715) * w,
+              // Text has been put in a container here to wrap the text down (i.e. to make it multiline)
               child: Container(
                 width: (mobile ? 1 : 0.6) * w,
                 child: Text(
-                  "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book",
+                  description,
                   style: TextStyle(
                     fontFamily: "DM Sans",
                     fontSize: w * (mobile ? 0.0388 : 0.0088),
@@ -282,30 +447,58 @@ Widget ComicDetailsCard(bool mobile) {
               ),
             ),
             //-----------------------------------------------------------------------
-            //Share Icon
+            //Share Icon & Text
             Positioned(
-              top: w * (mobile ? 1.496 : 0.1450),
+              // top: w * (mobile ? 1.496 : 0.14),
+              top: (mobile ? h * 0.93 : w * 0.14),
               left: (mobile ? 0 : 0.255) * w,
-              child: Icon(Icons.share_rounded,
-                  size: (mobile ? 0.0555 : 0.012) * w),
+              child: TextButton(
+                // If its a mobile, then the inbuilt share functionality of the platform (Android or iOS) opens
+                // we are using Share Plus Package to do this.
+                onPressed: mobile
+                    ? () => Share.share(
+                        'Hey Check out this awesome comic $comic_name by $author ${url}comic/$comicID')
+                    // If its a PC, then the Share Link is copied to the Clipboard
+                    : () => Clipboard.setData(ClipboardData(
+                                text:
+                                    "Hey Check out this awesome comic $comic_name by $author ${url}comic/$comicID"))
+                            .then((_) {
+                          // After copying the link to the clipboard, a snackbar is shown affirming the same
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              behavior: SnackBarBehavior.floating,
+                              width: 0.3 * w,
+                              content: Center(
+                                  child: Text('Link Copied to Clipboard'))));
+                        }),
+                // Row Containing the Share Icon & Text
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    // Share Icon
+                    Icon(
+                      Icons.share_rounded,
+                      size: (mobile ? 0.0555 : 0.012) * w,
+                      color: Colors.black,
+                    ),
+
+                    // Share Text
+                    Text(
+                      "SHARE",
+                      style: TextStyle(
+                        fontFamily: "DM Sans",
+                        fontSize: w * (mobile ? 0.038 : 0.0088),
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xff000000),
+                        //   height: 18 / 14,
+                      ),
+                      textAlign: TextAlign.left,
+                    )
+                  ],
+                ),
+              ),
             ),
             //----------------------------------------------------------------------
-            //Share
-            Positioned(
-                top: w * (mobile ? 1.5 : 0.1450),
-                left: w * (mobile ? 0.0703 : 0.271),
-                child: Text(
-                  "SHARE",
-                  style: TextStyle(
-                    fontFamily: "DM Sans",
-                    fontSize: w * (mobile ? 0.038 : 0.0088),
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xff000000),
-                    //   height: 18 / 14,
-                  ),
-                  textAlign: TextAlign.left,
-                )),
-            //-------------------------------------------------------------------------
+
             //Ratings Icon (Rounded Star)
             Positioned(
               top: w * (mobile ? 1.020 : 0.007),
@@ -319,7 +512,7 @@ Widget ComicDetailsCard(bool mobile) {
                 top: w * (mobile ? 1.029 : 0.0092),
                 left: w * (mobile ? 0.0866 : 0.8737),
                 child: Text(
-                  "4.0 Ratings",
+                  '$averageRating Ratings',
                   style: TextStyle(
                     fontFamily: "Space Grotesk",
                     fontSize: (mobile ? 0.03888 : 0.0088) * w,
@@ -345,7 +538,7 @@ Widget ComicDetailsCard(bool mobile) {
                 left: w * (mobile ? 0.4565 : 0.957),
                 top: w * (mobile ? 1.029 : 0.0092),
                 child: Text(
-                  "1.5k Likes",
+                  '$totalLikes Likes',
                   style: TextStyle(
                     fontFamily: "Space Grotesk",
                     fontSize: (mobile ? 0.03888 : 0.0088) * w,
@@ -364,8 +557,9 @@ Widget ComicDetailsCard(bool mobile) {
 }
 //-------------------------------------------------------------------------------------
 
-// DownloadAdWidget
-Widget DownloadAd(bool mobile) {
+// DownloadAd Widget
+// ID: 3
+Widget DownloadAd(mobile, comic_name) {
   return AspectRatio(
     aspectRatio: (mobile ? 360 / 429 : 1588 / 217),
     child: LayoutBuilder(builder: (context, constraints) {
@@ -394,7 +588,7 @@ Widget DownloadAd(bool mobile) {
             child: Container(
               width: w * (mobile ? 0.9 : 0.314),
               child: Text(
-                "Download and read Astra The Immortal on Toonsutra app today!",
+                "Download and read $comic_name on Toonsutra app today!",
                 style: TextStyle(
                   fontFamily: "DM Sans",
                   fontSize: w * (mobile ? 0.0722 : 0.016),
@@ -410,38 +604,52 @@ Widget DownloadAd(bool mobile) {
 
           // Get it on Google Play Button
           Positioned(
-            top: w * (mobile ? 0.41 : 0.086),
-            left: w * (mobile ? 0.0494 : 0.034),
-            child: Image.asset(
-              'assets/images/googleplay.png',
-              width: w * (mobile ? 0.4 : 0.090),
-              height: w * (mobile ? 0.1222 : 0.027),
-            ),
-          ),
+              top: w * (mobile ? 0.41 : 0.086),
+              left: w * (mobile ? 0.0494 : 0.034),
+              child: InkWell(
+                onTap: () {
+                  window.location.href = 'https://www.toonsutra.com/';
+                },
+                child: Container(
+                  width: w * (mobile ? 0.4 : 0.090),
+                  height: w * (mobile ? 0.1222 : 0.027),
+                  child: Image.asset('assets/images/googleplay.png',
+                      fit: BoxFit.contain),
+                ),
+              )),
           //-----------------------------------------------------------------------------------------
 
           // Download on the App Store Button
           Positioned(
-            top: w * (mobile ? 0.41 : 0.086),
-            left: w * (mobile ? 0.460 : 0.1388),
-            child: Image.asset(
-              'assets/images/appstore.png',
-              width: w * (mobile ? 0.4 : 0.090),
-              height: w * (mobile ? 0.1222 : 0.027),
-            ),
-          ),
+              top: w * (mobile ? 0.41 : 0.086),
+              left: w * (mobile ? 0.460 : 0.1388),
+              child: InkWell(
+                onTap: () {
+                  window.location.href = 'https://www.toonsutra.com/';
+                },
+                child: Container(
+                  width: w * (mobile ? 0.4 : 0.090),
+                  height: w * (mobile ? 0.1222 : 0.027),
+                  child: Image.asset(
+                    'assets/images/appstore.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              )),
           //------------------------------------------------------------------------------------------
 
           // Mobile Screen Pic
           Positioned(
             // top: w * 0.0111,
-            top: (mobile ? 0.6103 : 0) * w,
+            top: (mobile ? 0.6103 : 0.0157) * w,
             left: w * (mobile ? 0.0746 : 0.790),
-            child: Image.asset(
-              'assets/images/mobile.png',
-              //  width: w * 0.1306,
-              height: (mobile ? 0.7 * w : h),
-            ),
+            child: Container(
+                width: w * (mobile ? 0.576 : 0.1306),
+                height: w * (mobile ? 0.5799 : 0.125),
+                child: Image.asset(
+                  'assets/images/mobile.png',
+                  fit: BoxFit.contain,
+                )),
           ),
           //------------------------------------------------------------------------------------------
         ],
@@ -452,14 +660,20 @@ Widget DownloadAd(bool mobile) {
 //-------------------------------------------------------------------------------------
 
 //ChapterBox Widget
-Widget ChapterBox() {
+Widget ChapterBox(
+  name,
+  chapter_thumbnail,
+  publishDate,
+  totalChapterLike,
+  chapter_num,
+) {
   return AspectRatio(
     aspectRatio: 358 / 99.5,
     child: LayoutBuilder(builder: (context, constraints) {
       double w = constraints.maxWidth;
-      double h = constraints.maxHeight;
+
       return Container(
-        color: Colors.white,
+        //color: Colors.white,
         child: Stack(
           children: [
             // Comic Chapter Thumbnail Image
@@ -469,8 +683,8 @@ Widget ChapterBox() {
               child: Container(
                 width: w * 0.21,
                 height: w * 0.21,
-                child: Image.asset(
-                  'assets/images/image2.png',
+                child: Image.network(
+                  chapter_thumbnail,
                   fit: BoxFit.cover,
                 ),
               ),
@@ -481,7 +695,7 @@ Widget ChapterBox() {
                 left: w * 0.26,
                 top: 0,
                 child: Text(
-                  "Ch 5 - Astra The Immortal",
+                  name,
                   style: TextStyle(
                     fontFamily: "DM Sans",
                     fontSize: w * 0.04,
@@ -497,7 +711,7 @@ Widget ChapterBox() {
                 left: w * 0.26,
                 top: w * 0.06,
                 child: Text(
-                  "10 July 2023",
+                  publishDate,
                   style: TextStyle(
                     fontFamily: "DM Sans",
                     fontSize: w * 0.033,
@@ -524,7 +738,7 @@ Widget ChapterBox() {
                 top: w * 0.166,
                 left: w * 0.316,
                 child: Text(
-                  "1.5k",
+                  totalChapterLike,
                   style: TextStyle(
                     fontFamily: "Space Grotesk",
                     fontSize: w * 0.0391,
@@ -564,48 +778,153 @@ Widget ChapterBox() {
 //--------------------------------------------------------------------------------------
 
 //ChapterBoxGrid
-Widget ChapterBoxGrid(bool mobile) {
+// ID: 5
+Widget ChapterBoxGrid(bool mobile, chapters, comic_name) {
+  if (chapters == null) {
+    return Text(
+      'Someting Went Wrong. It seems like you are not authorized to view the Chapters of this Comic',
+      style: TextStyle(
+        color: Colors.red,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
   return LayoutBuilder(builder: (context, constraints) {
     double w = constraints.maxWidth;
     return Container(
         width: w,
         child: Wrap(
           spacing: w * 0.01,
-          children: [
-            Container(
-              width: w * (mobile ? 1 : 0.2425),
-              child: ChapterBox(),
-            ),
-            Container(
-              width: w * (mobile ? 1 : 0.2425),
-              child: ChapterBox(),
-            ),
-            Container(
-              width: w * (mobile ? 1 : 0.2425),
-              child: ChapterBox(),
-            ),
-            Container(
-              width: w * (mobile ? 1 : 0.2425),
-              child: ChapterBox(),
-            ),
-            Container(
-              width: w * (mobile ? 1 : 0.2425),
-              child: ChapterBox(),
-            ),
-            Container(
-              width: w * (mobile ? 1 : 0.2425),
-              child: ChapterBox(),
-            ),
-            Container(
-              width: w * (mobile ? 1 : 0.2425),
-              child: ChapterBox(),
-            ),
-            Container(
-              width: w * (mobile ? 1 : 0.2425),
-              child: ChapterBox(),
-            ),
-          ],
+          children: chapters.map<Widget>((chapter) {
+            String name = chapter['name'];
+            String chapter_thumbnail =
+                chapter['chapter_thumbnail'] ?? 'https://picsum.photos/200/300';
+            String publishDate = chapter['pubilshDate'] ?? 'DD/MM/YY';
+            String totalChapterLike = chapter['totalChapterLike'] ?? '0';
+            String chapter_num = chapter['chapter_num'] ?? '0';
+            return InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            ChapterPreview(mobile, comic_name, chapter)),
+                  );
+                },
+                child: Container(
+                    width: w * (mobile ? 1 : 0.24),
+                    child: ChapterBox(
+                      name,
+                      chapter_thumbnail,
+                      publishDate,
+                      totalChapterLike,
+                      chapter_num,
+                    )));
+          }).toList(),
         ));
   });
 }
 //---------------------------------------------------------------------------------------
+
+// Chapter Preview Widget
+// It opens up a new Screen when you click on any ChapterBox
+/*  
+Parameters: 
+1. bool mobile : Tells the widget whether we are in mobile view (true) or PC view (false).
+2. String comic_name : Supplies the Name of the Comic to be used in the Preview Screen. 
+3. Map<String, dynamic> chapter: chapter is a Map that contains the entire information related to a chapter. It is one index of the chapters array. 
+*/
+Widget ChapterPreview(mobile, comic_name, chapter) {
+  return Scaffold(
+    body: Center(
+      // To make the Screen Scrollable
+      child: SingleChildScrollView(
+          // To cover only about 90% of the Screen Width
+          child: FractionallySizedBox(
+        // widthFactor: 1588 / 1728,
+        widthFactor: 1,
+        // Using layout builder to access the dynamic width 'w'
+        child: LayoutBuilder(builder: ((context, constraints) {
+          // w represents the current dynamic width of the FractionallySizedBox
+          double w = constraints.maxWidth;
+          /* 
+          This column contains the following items: 
+          1. NavBar Widget (Widget 1) (Navigation Bar)
+          2. A Row containing Back Arrow (To go to previous screen), comic_name and chapter_name. 
+          3. First 5 Image Slices of this chapter for preview 
+          4. A DownlaodAd box showing an Ad to user to downlaod the App from Play Store or App Store 
+          */
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                  height:
+                      w * (mobile ? 0.04722 : 0.0192)), // for Vertical Spacing
+              // 1. NavBar Widget (Widget 1) (Navigation Bar)
+              NavBar(mobile),
+              SizedBox(
+                  height:
+                      w * (mobile ? 0.04722 : 0.0192)), // for Vertical Spacing
+              //2. A Row containing Back Arrow (To go to previous screen), comic_name and chapter_name.
+              Row(
+                children: [
+                  //Back Arrow
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.arrow_back,
+                        color: Colors.black,
+                        size: w * (mobile ? 0.05 : 0.0125)),
+                  ),
+                  // Comic Name
+                  Text(
+                    '$comic_name/',
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      color: Color.fromRGBO(237, 28, 36, 1),
+                      fontFamily: "DM Sans",
+                      fontSize: w * (mobile ? 0.03 : 0.015),
+                      fontWeight: FontWeight.w600,
+                      //  height: 31 / 24,
+                    ),
+                  ),
+                  // Chapter Name
+                  Text(
+                    '${chapter['name']}',
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      color: Color.fromRGBO(137, 137, 137, 1),
+                      fontFamily: "DM Sans",
+                      fontSize: w * (mobile ? 0.03 : 0.015),
+                      fontWeight: FontWeight.w600,
+                      // height: 31 / 24,
+                    ),
+                  ),
+                ],
+              ),
+              // Row Ends Here
+              SizedBox(height: w * (mobile ? 0.02 : 0.038)), // Vertical Spacing
+              // 3. First 5 Image Slices of this chapter for preview
+              Wrap(
+                spacing: 0, // Horizontal spacing between items
+                runSpacing: 0, // Vertical spacing between items
+                children: chapter['chapter_split_arr']
+                    .take(5)
+                    .map<Widget>((entry) => Image.network(
+                        entry['split_img_url'],
+                        fit: BoxFit.cover))
+                    .toList(),
+              ),
+              // Chapter Image Slices End Here
+              SizedBox(height: w * (mobile ? 0.02 : 0.038)),
+              //4. A DownlaodAd box showing an Ad to user to downlaod the App from Play Store or App Store
+              DownloadAd(mobile, comic_name),
+            ],
+          );
+        })),
+      )),
+    ),
+  );
+}
+//-----------------------------------------------------------------------------------------

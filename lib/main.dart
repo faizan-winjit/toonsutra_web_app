@@ -1,13 +1,11 @@
-import 'dart:js';
-
 import 'package:flutter/material.dart';
-import 'package:toonsutra_web_app/comicdetailsmodel.dart';
-import 'comicdetailsold.dart';
-import 'DownloadAd.dart' as Dow;
+import 'package:webview_flutter/webview_flutter.dart';
+
+import 'comicdetails.dart';
 
 void main() {
   runApp(MaterialApp(
-    title: 'Navigation Basics',
+    title: "Toonsutra - World's Leading Webtoons Platform",
     initialRoute: '/',
     onGenerateRoute: (settings) {
       if (settings.name!.startsWith('/comic/')) {
@@ -15,44 +13,40 @@ void main() {
         final comicID = settings.name!.split('/').last;
 
         // Return MaterialPageRoute with FirstRoute widget
-        return MaterialPageRoute(builder: (context) => FirstRoute(comicID));
+        return MaterialPageRoute(builder: (context) => ComicRoute(comicID));
       }
       // Handle other routes
-      return MaterialPageRoute(builder: (context) => SecondRoute());
+      return MaterialPageRoute(builder: (context) => DefaultRoute());
     },
   ));
 }
 
-class FirstRoute extends StatelessWidget {
+class ComicRoute extends StatelessWidget {
   String comicID;
   // Creating its constructor
-  FirstRoute(this.comicID);
+  ComicRoute(this.comicID);
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      if (constraints.maxWidth < 800) {
-        return Scaffold(
-            body: Center(
-          child: SingleChildScrollView(
-            child: Iphone142Widget(),
-          ),
-        ));
-      } else {
-        return Scaffold(
-            body: Center(
-          child: ComicDetails(comicID),
-        ));
-      }
-    });
+    return Scaffold(
+      body: ComicDetails(comicID),
+      drawer: Drawer(
+        child: Text('Hi'),
+      ),
+    );
   }
 }
 
-class SecondRoute extends StatelessWidget {
-  const SecondRoute({super.key});
+class DefaultRoute extends StatelessWidget {
+  const DefaultRoute({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: Dow.ComicDetails());
+    return Scaffold(
+      body: ComicDetails('288'),
+      drawer: Drawer(
+        child: Text('Empty as of now'),
+      ),
+    );
   }
 }
