@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -24,6 +24,11 @@ jobs:
       - name: Build Flutter web app
         run: flutter build web
 
+      - name: Zip build files
+        run: |
+          cd build
+          zip -r web.zip web
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -31,5 +36,5 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Upload build files to S3
-        run: aws s3 sync build/web s3://toonsutra-web-app-winjit --acl public-read --delete
+      - name: Upload zip file to S3
+        run: aws s3 cp build/web.zip s3://toonsutra-web-app-winjit/web.zip --acl public-read
