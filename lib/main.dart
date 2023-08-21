@@ -33,7 +33,7 @@ class ComicRoute extends StatelessWidget {
     return Scaffold(
       body: ComicDetails(comicID),
       drawer: Drawer(
-        child: Text('Hi'),
+        child: ToonSutraDrawer(),
       ),
     );
   }
@@ -48,7 +48,6 @@ class DefaultRoute extends StatelessWidget {
     return Scaffold(
       body: ComicDetails('288'),
       drawer: Drawer(
-        width: drawerWidth,
         child: ToonSutraDrawer(),
       ),
     );

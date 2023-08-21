@@ -1,5 +1,7 @@
 // Dependencies
 // Flutter Material Package
+import 'dart:js';
+
 import 'package:flutter/material.dart';
 // Dart Async for Asynchoronous Flow
 import 'dart:async';
@@ -501,10 +503,10 @@ Widget ComicDetailsCard(mobile, comic_name, author, description,
 
             //Ratings Icon (Rounded Star)
             Positioned(
-              top: w * (mobile ? 1.020 : 0.007),
+              top: w * (mobile ? 1.010 : 0.007),
               left: w * (mobile ? 0 : 0.8541),
-              child:
-                  Icon(Icons.star_rounded, size: w * (mobile ? 0.0666 : 0.015)),
+              child: Icon(Icons.star_border_rounded,
+                  size: w * (mobile ? 0.0666 : 0.015)),
             ),
             //-------------------------------------------------------------------------
             //Ratings
@@ -526,7 +528,7 @@ Widget ComicDetailsCard(mobile, comic_name, author, description,
             //Like Icon
             Positioned(
                 left: w * (mobile ? 0.3699 : 0.9378),
-                top: w * (mobile ? 1.020 : 0.007),
+                top: w * (mobile ? 1.010 : 0.007),
                 child: Icon(
                   Icons.favorite_rounded,
                   size: w * (mobile ? 0.0666 : 0.015),
@@ -681,13 +683,16 @@ Widget ChapterBox(
               left: 0,
               top: 0,
               child: Container(
-                width: w * 0.21,
-                height: w * 0.21,
-                child: Image.network(
-                  chapter_thumbnail,
-                  fit: BoxFit.cover,
-                ),
-              ),
+                  width: w * 0.21,
+                  height: w * 0.21,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      chapter_thumbnail,
+                      fit: BoxFit.fitWidth,
+                      alignment: Alignment.topCenter,
+                    ),
+                  )),
             ),
             //-------------------------------------
             // Chapter Name
@@ -725,7 +730,7 @@ Widget ChapterBox(
             //Heart Icon
             Positioned(
               left: w * 0.26,
-              top: w * 0.171,
+              top: w * 0.172,
               child: Icon(
                 Icons.favorite_rounded,
                 color: Color.fromRGBO(108, 108, 108, 1),
@@ -749,7 +754,7 @@ Widget ChapterBox(
                   textAlign: TextAlign.left,
                 )),
             //-------------------------------------------------------
-            //Lock
+            //EYE Icon
             Positioned(
               left: w * 0.902,
               top: w * 0.05,
@@ -759,14 +764,12 @@ Widget ChapterBox(
             //------------------------------------------------------
             //Divider
             Positioned(
-                bottom: 5,
-                left: 5,
-                child: Divider(
-                  height: 10, // Height of the divider
-                  color: Colors.blue, // Color of the divider
-                  thickness: 10, // Thickness of the divider
-                  indent: 16, // Left indent of the divider
-                  endIndent: 16, // Right indent of the divider
+                bottom: 0,
+                left: 0,
+                child: Container(
+                  color: Color.fromRGBO(228, 228, 228, 1),
+                  width: w,
+                  height: 1,
                 )),
             //----------------------------------------------------
           ],
@@ -795,6 +798,7 @@ Widget ChapterBoxGrid(bool mobile, chapters, comic_name) {
         width: w,
         child: Wrap(
           spacing: w * 0.01,
+          runSpacing: w * (mobile ? 0.06215 : 0.0157),
           children: chapters.map<Widget>((chapter) {
             String name = chapter['name'];
             String chapter_thumbnail =
@@ -807,8 +811,8 @@ Widget ChapterBoxGrid(bool mobile, chapters, comic_name) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) =>
-                            ChapterPreview(mobile, comic_name, chapter)),
+                        builder: (context) => ChapterPreview(
+                            mobile, comic_name, chapter, context)),
                   );
                 },
                 child: Container(
@@ -834,8 +838,13 @@ Parameters:
 2. String comic_name : Supplies the Name of the Comic to be used in the Preview Screen. 
 3. Map<String, dynamic> chapter: chapter is a Map that contains the entire information related to a chapter. It is one index of the chapters array. 
 */
-Widget ChapterPreview(mobile, comic_name, chapter) {
+Widget ChapterPreview(mobile, comic_name, chapter, context) {
+  double screenWidth = MediaQuery.of(context).size.width;
+  mobile = screenWidth < 800 ? true : false;
   return Scaffold(
+    drawer: Drawer(
+      child: ToonSutraDrawer(),
+    ),
     body: Center(
       // To make the Screen Scrollable
       child: SingleChildScrollView(
@@ -863,47 +872,60 @@ Widget ChapterPreview(mobile, comic_name, chapter) {
                   height:
                       w * (mobile ? 0.04722 : 0.0192)), // for Vertical Spacing
               // 1. NavBar Widget (Widget 1) (Navigation Bar)
-              NavBar(mobile),
+              FractionallySizedBox(
+                widthFactor: 1588 / 1728,
+                child: NavBar(mobile),
+              ),
+
               SizedBox(
                   height:
                       w * (mobile ? 0.04722 : 0.0192)), // for Vertical Spacing
               //2. A Row containing Back Arrow (To go to previous screen), comic_name and chapter_name.
-              Row(
-                children: [
-                  //Back Arrow
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.arrow_back,
-                        color: Colors.black,
-                        size: w * (mobile ? 0.05 : 0.0125)),
-                  ),
-                  // Comic Name
-                  Text(
-                    '$comic_name/',
-                    textAlign: TextAlign.left,
-                    style: TextStyle(
-                      color: Color.fromRGBO(237, 28, 36, 1),
-                      fontFamily: "DM Sans",
-                      fontSize: w * (mobile ? 0.03 : 0.015),
-                      fontWeight: FontWeight.w600,
-                      //  height: 31 / 24,
+              FractionallySizedBox(
+                // widthFactor: 1588 / 1728,
+                widthFactor: 1,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    //Back Arrow
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(Icons.arrow_back,
+                          color: Colors.black,
+                          size: w * (mobile ? 0.07 : 0.02)),
                     ),
-                  ),
-                  // Chapter Name
-                  Text(
-                    '${chapter['name']}',
-                    textAlign: TextAlign.left,
-                    style: TextStyle(
-                      color: Color.fromRGBO(137, 137, 137, 1),
-                      fontFamily: "DM Sans",
-                      fontSize: w * (mobile ? 0.03 : 0.015),
-                      fontWeight: FontWeight.w600,
-                      // height: 31 / 24,
+                    // Comic Name
+                    Text(
+                      '$comic_name/',
+                      textAlign: TextAlign.left,
+                      style: TextStyle(
+                        color: Color.fromRGBO(237, 28, 36, 1),
+                        fontFamily: "DM Sans",
+                        fontSize: w * (mobile ? 0.04 : 0.015),
+                        fontWeight: FontWeight.w600,
+                        //  height: 31 / 24,
+                      ),
                     ),
-                  ),
-                ],
+                    // Chapter Name
+                    Flexible(
+                      child: Text(
+                        '${chapter['name']}',
+                        textAlign: TextAlign.left,
+                        style: TextStyle(
+                          color: Color.fromRGBO(137, 137, 137, 1),
+                          fontFamily: "DM Sans",
+                          fontSize: w * (mobile ? 0.03 : 0.015),
+                          fontWeight: FontWeight.w600,
+                          overflow: TextOverflow.ellipsis,
+
+                          // height: 31 / 24,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                // Row Ends Here
               ),
-              // Row Ends Here
               SizedBox(height: w * (mobile ? 0.02 : 0.038)), // Vertical Spacing
               // 3. First 5 Image Slices of this chapter for preview
               Wrap(
@@ -917,7 +939,7 @@ Widget ChapterPreview(mobile, comic_name, chapter) {
                     .toList(),
               ),
               // Chapter Image Slices End Here
-              SizedBox(height: w * (mobile ? 0.02 : 0.038)),
+              // SizedBox(height: w * (mobile ? 0.02 : 0.038)),
               //4. A DownlaodAd box showing an Ad to user to downlaod the App from Play Store or App Store
               DownloadAd(mobile, comic_name),
             ],
@@ -935,18 +957,24 @@ Widget ToonSutraDrawer() {
     children: [
       Container(
         padding: EdgeInsets.all(16),
-        //  color: Colors.blue,
+        // color: Colors.blue,
+        width: 800,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.asset(
-              'assets/images/toonsutra_logo.png', // Replace with your image path
-              width: 80,
-              height: 80,
-            ),
+            InkWell(
+                onTap: () {
+                  window.location.href = 'https://www.toonsutra.com/';
+                },
+                child: Image.asset(
+                  'assets/images/toonsutra_logo.png',
+                  width: 80,
+                  height: 80,
+                )),
             SizedBox(height: 10),
             Text(
               'ToonSutra',
+              textAlign: TextAlign.left,
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -959,33 +987,43 @@ Widget ToonSutraDrawer() {
       ListTile(
         leading: Icon(Icons.home),
         title: Text('Home'),
-        onTap: () {},
+        onTap: () {
+          window.location.href = 'https://www.toonsutra.com/';
+        },
       ),
       ListTile(
         leading: Icon(Icons.help),
         title: Text('FAQ'),
-        onTap: () {},
+        onTap: () {
+          window.location.href = 'https://toonsutra.in/faq_01/';
+        },
       ),
       ListTile(
         leading: Icon(Icons.lock),
         title: Text('Privacy Policy'),
-        onTap: () {},
+        onTap: () {
+          window.location.href = 'https://toonsutra.in/privacy-policy/';
+        },
       ),
       ListTile(
         leading: Icon(Icons.gavel),
         title: Text('Terms & Conditions'),
-        onTap: () {},
+        onTap: () {
+          window.location.href = 'https://toonsutra.in/terms-and-conditions/';
+        },
       ),
       ListTile(
         leading: Icon(Icons.contact_mail),
         title: Text('Contact Us'),
-        onTap: () {},
+        onTap: () {
+          window.location.href = 'https://toonsutra.in/contact/';
+        },
       ),
       Spacer(), // Spacer to push the last item to the bottom
       Padding(
         padding: EdgeInsets.all(16),
         child: Text(
-          '@toonsutra 2023',
+          '@2023 Toonsutra',
           style: TextStyle(
             color: Colors.grey,
           ),
