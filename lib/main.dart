@@ -1,3 +1,5 @@
+import 'dart:js';
+
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -42,9 +44,11 @@ class DefaultRoute extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    double drawerWidth = MediaQuery.of(context).size.width * 0.75;
     return Scaffold(
       body: ComicDetails('288'),
       drawer: Drawer(
+        width: drawerWidth,
         child: ToonSutraDrawer(),
       ),
     );

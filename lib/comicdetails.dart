@@ -398,7 +398,7 @@ Widget ComicDetailsCard(mobile, comic_name, author, description,
                 left: (mobile ? 0 : 0.255) * w,
                 top: (mobile ? 0.854 : 0.026) * w,
                 child: Text(
-                  '$author >',
+                  author,
                   style: TextStyle(
                     fontFamily: "DM Sans",
                     fontSize: w * (mobile ? 0.0388 : 0.0088),
@@ -753,8 +753,8 @@ Widget ChapterBox(
             Positioned(
               left: w * 0.902,
               top: w * 0.05,
-              child:
-                  Icon(Icons.lock_outline, color: Colors.black, size: w * 0.06),
+              child: Icon(Icons.remove_red_eye,
+                  color: Colors.black, size: w * 0.06),
             ),
             //------------------------------------------------------
             //Divider
@@ -931,6 +931,67 @@ Widget ChapterPreview(mobile, comic_name, chapter) {
 
 // ToonSutra Drawer
 Widget ToonSutraDrawer() {
-  return Text('I am a drawer');
+  return Column(
+    children: [
+      Container(
+        padding: EdgeInsets.all(16),
+        //  color: Colors.blue,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Image.asset(
+              'assets/images/toonsutra_logo.png', // Replace with your image path
+              width: 80,
+              height: 80,
+            ),
+            SizedBox(height: 10),
+            Text(
+              'ToonSutra',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                // color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+      ListTile(
+        leading: Icon(Icons.home),
+        title: Text('Home'),
+        onTap: () {},
+      ),
+      ListTile(
+        leading: Icon(Icons.help),
+        title: Text('FAQ'),
+        onTap: () {},
+      ),
+      ListTile(
+        leading: Icon(Icons.lock),
+        title: Text('Privacy Policy'),
+        onTap: () {},
+      ),
+      ListTile(
+        leading: Icon(Icons.gavel),
+        title: Text('Terms & Conditions'),
+        onTap: () {},
+      ),
+      ListTile(
+        leading: Icon(Icons.contact_mail),
+        title: Text('Contact Us'),
+        onTap: () {},
+      ),
+      Spacer(), // Spacer to push the last item to the bottom
+      Padding(
+        padding: EdgeInsets.all(16),
+        child: Text(
+          '@toonsutra 2023',
+          style: TextStyle(
+            color: Colors.grey,
+          ),
+        ),
+      ),
+    ],
+  );
 }
 //-----------------------------------------------------------------------------------------
