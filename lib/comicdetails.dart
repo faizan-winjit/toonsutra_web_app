@@ -928,3 +928,9 @@ Widget ChapterPreview(mobile, comic_name, chapter) {
   );
 }
 //-----------------------------------------------------------------------------------------
+
+// ToonSutra Drawer
+Widget ToonSutraDrawer() {
+  return Text('I am a drawer');
+}
+//-----------------------------------------------------------------------------------------

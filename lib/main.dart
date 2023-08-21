@@ -45,7 +45,7 @@ class DefaultRoute extends StatelessWidget {
     return Scaffold(
       body: ComicDetails('288'),
       drawer: Drawer(
-        child: Text('Empty as of now'),
+        child: ToonSutraDrawer(),
       ),
     );
   }
