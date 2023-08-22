@@ -1,0 +1,20 @@
+trigger:
+- main
+
+pool:
+ vmImage: ubuntu-latest
+
+stages:
+  - stage: BuildAndDeploy
+    jobs:
+      - job: BuildAndDeployJob
+        steps:
+          - task: FlutterInstall@0
+            inputs:
+              version: '3.5.x'
+
+          - script: flutter pub get
+            displayName: 'Install Flutter Dependencies'
+          
+          - script: flutter build web
+            displayName: 'Build Flutter Web'
